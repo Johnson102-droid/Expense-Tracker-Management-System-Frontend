@@ -1,6 +1,6 @@
 // src/features/expenses/components/AddExpenseModal.tsx
 import { useForm } from 'react-hook-form';
-import type { SubmitHandler } from 'react-hook-form'; // <-- FIX: Import as type
+import type { SubmitHandler } from 'react-hook-form'; 
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 
@@ -16,7 +16,7 @@ interface AddExpenseModalProps {
 }
 
 // --- Form Validation Schema ---
-const expenseSchema = yup.object().shape({
+const expenseSchema = yup.object({ // <-- Use yup.object()
   amount: yup
     .number()
     .typeError('Amount must be a number')
@@ -26,18 +26,12 @@ const expenseSchema = yup.object().shape({
     .number()
     .typeError('Please select a category')
     .required('Category is required'),
-  // FIX: Change date validation from .date() to .string()
   expense_date: yup.string().required('Date is required'), 
-  note: yup.string().optional(),
+  note: yup.string(), // <-- FIX 1: Change from .optional() to .string()
 });
 
-// FIX: Manually define FormInputs to fix the type conflict
-type FormInputs = {
-    amount: number;
-    category_id: number;
-    expense_date: string;
-    note?: string;
-};
+// FIX 2: Infer the type directly from the schema
+type FormInputs = yup.InferType<typeof expenseSchema>;
 
 const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
   // Get hooks for API calls
@@ -51,16 +45,16 @@ const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
     handleSubmit,
     formState: { errors },
   } = useForm<FormInputs>({
-    resolver: yupResolver(expenseSchema),
-    // Set default date to today's string
+    resolver: yupResolver(expenseSchema), // This will now work
+    
     defaultValues: {
       expense_date: new Date().toISOString().split('T')[0],
-      note: '',
+      note: undefined, // Default 'note' to undefined
     },
   });
 
   // Handle the form submission
-  const onSubmit: SubmitHandler<FormInputs> = async (data) => {
+  const onSubmit: SubmitHandler<FormInputs> = async (data) => { // This will also work
     if (!user || isCreatingExpense) return;
 
     try {
@@ -70,6 +64,7 @@ const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
         user_id: user.id, // Add the user_id
         category_id: Number(data.category_id), // Ensure it's a number
         expense_date: data.expense_date, // Send the date string
+        note: data.note || '', // Send empty string if note is undefined
       }).unwrap();
       
       onClose(); // Close the modal on success
@@ -87,7 +82,7 @@ const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
       {/* Modal Content */}
       <div
         className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()} // Prevent click from closing modal
+        onClick={(e) => e.stopPropagation()} 
       >
         <h2 className="text-2xl font-bold">Add New Transaction</h2>
         <p className="mt-2 text-gray-600">
@@ -175,7 +170,7 @@ const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
             <button
               type="submit"
               disabled={isCreatingExpense}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:bg-blue-400"
+              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 disabled:bg-green-400"
             >
               {isCreatingExpense ? 'Adding...' : 'Add Expense'}
             </button>

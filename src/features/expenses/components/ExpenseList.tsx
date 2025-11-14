@@ -1,18 +1,17 @@
 // src/features/expenses/components/ExpenseList.tsx
-import React from 'react';
-// Import the delete mutation hook
+// FIX: Removed unused 'React' import
 import { useGetExpensesQuery, useDeleteExpenseMutation } from '../expenseApiSlice'; 
 import type { ExpenseResponse } from '../expenseApiSlice'; 
-import type { Category } from '../../categories/categoryApiSlice'; // Import Category type
+import type { Category } from '../../categories/categoryApiSlice'; 
 
 // Define Props for the ExpenseList component
 interface ExpenseListProps {
-    categories: Category[]; // Receive the categories array
+    categories: Category[]; 
 }
 
 const ExpenseList = ({ categories }: ExpenseListProps) => { 
   const { data: expenses, isLoading, isSuccess, isError, error } = useGetExpensesQuery();
-  const [deleteExpense] = useDeleteExpenseMutation(); // <-- NEW MUTATION HOOK
+  const [deleteExpense] = useDeleteExpenseMutation(); 
 
   if (isLoading) {
     return (
@@ -51,8 +50,8 @@ const ExpenseList = ({ categories }: ExpenseListProps) => {
   // Display the List
   return (
     <div className="space-y-4">
+      {/* FIX: Add 'expenses?.map' to safely handle undefined */}
       {expenses?.map((expense: ExpenseResponse) => {
-          // --- FIX: Logic to check category and determine type ---
           const category = categories.find(cat => cat.id === expense.category_id);
           const isIncome = category?.type === 'Income';
           const amountColor = isIncome ? 'text-green-600' : 'text-red-600';
@@ -64,7 +63,6 @@ const ExpenseList = ({ categories }: ExpenseListProps) => {
               
               {/* Left Side: Category and Note */}
               <div className="flex items-center space-x-4">
-                {/* FIX: Use correct color based on type */}
                 <div className={`h-3 w-3 rounded-full ${isIncome ? 'bg-green-500' : 'bg-red-500'}`}></div> 
                 
                 <div>
@@ -76,7 +74,6 @@ const ExpenseList = ({ categories }: ExpenseListProps) => {
               {/* Right Side: Amount, Date, and Delete Button */}
               <div className="flex items-center space-x-3">
                   <div className="text-right">
-                      {/* FIX: Use correct color and sign */}
                       <p className={`text-lg font-semibold ${amountColor}`}>
                           {amountSign}${expense.amount.toFixed(2)}
                       </p>
@@ -84,7 +81,6 @@ const ExpenseList = ({ categories }: ExpenseListProps) => {
                           {new Date(expense.expense_date).toLocaleDateString()}
                       </p>
                   </div>
-                  {/* --- FIX: UPDATED DELETE ICON --- */}
                   <button 
                       onClick={() => handleDelete(expense.id)}
                       className="text-gray-400 hover:text-red-500 transition-colors"
