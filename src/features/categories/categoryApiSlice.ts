@@ -1,7 +1,6 @@
 // src/features/categories/categoryApiSlice.ts
 import { apiSlice } from '../auth/apiSlice';
 
-// Define the type for a Category
 export interface Category {
   id: number;
   name: string;
@@ -10,19 +9,16 @@ export interface Category {
   color: string; 
 }
 
-// Define the type for creating a new category
 interface CreateCategoryRequest {
   name: string;
   userId: number;
-  type: string; // Used for calculation
-  color: string; // Used for display
+  type: string; 
+  color: string; 
 }
 
-// Inject our endpoints into the original apiSlice
 export const categoryApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     
-    // getCategories Query
     getCategories: builder.query<Category[], void>({
       query: () => '/categories',
       providesTags: (result) =>
@@ -34,7 +30,6 @@ export const categoryApiSlice = apiSlice.injectEndpoints({
           : [{ type: 'Categories', id: 'LIST' }],
     }),
 
-    // createCategory Mutation
     createCategory: builder.mutation<Category, CreateCategoryRequest>({
       query: (newCategory) => ({
         url: '/categories',
@@ -44,7 +39,6 @@ export const categoryApiSlice = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: 'Categories', id: 'LIST' }],
     }),
 
-    // NEW: deleteCategory Mutation
     deleteCategory: builder.mutation<void, number>({
         query: (id) => ({
             url: `/categories/${id}`,
@@ -55,7 +49,6 @@ export const categoryApiSlice = apiSlice.injectEndpoints({
   }),
 });
 
-// Export the auto-generated hooks
 export const {
   useGetCategoriesQuery,
   useCreateCategoryMutation,

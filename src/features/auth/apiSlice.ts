@@ -20,10 +20,8 @@ export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQuery,
   
-  // --- THIS IS THE FIX ---
-  // Define all the "tags" we'll use for caching
+  // Define all the global tags used for caching/invalidation
   tagTypes: ['Categories', 'Expenses'], 
-  // -----------------------
 
   endpoints: (builder) => ({
     // Endpoints are injected from other files

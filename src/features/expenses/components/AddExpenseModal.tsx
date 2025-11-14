@@ -1,7 +1,7 @@
 // src/features/expenses/components/AddExpenseModal.tsx
-import { useForm } from 'react-hook-form'; 
-import type { SubmitHandler } from 'react-hook-form'; // <-- FIXED: Imported as a type
-import { yupResolver } from '@hookform/resolvers/yup'; 
+import { useForm } from 'react-hook-form';
+import type { SubmitHandler } from 'react-hook-form'; // <-- FIX: Import as type
+import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 
 // Import our hooks
@@ -26,19 +26,18 @@ const expenseSchema = yup.object().shape({
     .number()
     .typeError('Please select a category')
     .required('Category is required'),
-  expense_date: yup.date().typeError('Invalid date').required('Date is required'),
+  // FIX: Change date validation from .date() to .string()
+  expense_date: yup.string().required('Date is required'), 
   note: yup.string().optional(),
 });
 
-// --- Form Type FIX ---
-// Manually defining the type to resolve the nested type compatibility issues
+// FIX: Manually define FormInputs to fix the type conflict
 type FormInputs = {
     amount: number;
     category_id: number;
     expense_date: string;
     note?: string;
 };
-
 
 const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
   // Get hooks for API calls
@@ -53,10 +52,11 @@ const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
     formState: { errors },
   } = useForm<FormInputs>({
     resolver: yupResolver(expenseSchema),
+    // Set default date to today's string
     defaultValues: {
       expense_date: new Date().toISOString().split('T')[0],
       note: '',
-    } as any, // Cast as 'any' to avoid initial type warning on date format
+    },
   });
 
   // Handle the form submission
@@ -64,12 +64,13 @@ const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
     if (!user || isCreatingExpense) return;
 
     try {
+      // Send the data, it now matches the types perfectly
       await createExpense({
         ...data,
         user_id: user.id, // Add the user_id
         category_id: Number(data.category_id), // Ensure it's a number
-        expense_date: data.expense_date, // Send the date string directly
-      } as any).unwrap();
+        expense_date: data.expense_date, // Send the date string
+      }).unwrap();
       
       onClose(); // Close the modal on success
     } catch (err) {
@@ -127,7 +128,7 @@ const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
               </option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
-                  {category.name}
+                  {category.name} ({category.type})
                 </option>
               ))}
             </select>

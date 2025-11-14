@@ -1,14 +1,22 @@
-// src/pages/DashboardPage.tsx (FINAL WORKING CODE)
+// src/pages/DashboardPage.tsx
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logOut } from '../features/auth/authSlice';
 import type { RootState } from '../app/store';
 
-// Import hooks and components for both features
+// Import hooks and components
 import { useGetCategoriesQuery, useCreateCategoryMutation, useDeleteCategoryMutation } from '../features/categories/categoryApiSlice';
 import AddExpenseModal from '../features/expenses/components/AddExpenseModal';
 import ExpenseList from '../features/expenses/components/ExpenseList';
 import { useGetExpensesQuery } from '../features/expenses/expenseApiSlice'; 
+
+// --- NEW: Define our color swatches ---
+const colorSwatches = [
+  { name: 'Blue', hex: '#3b82f6' },
+  { name: 'Red', hex: '#ef4444' },
+  { name: 'Orange', hex: '#f97316' },
+  { name: 'Green', hex: '#22c55e' },
+];
 
 const DashboardPage = () => {
   const dispatch = useDispatch();
@@ -16,24 +24,24 @@ const DashboardPage = () => {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('transactions'); 
+  const [selectedColor, setSelectedColor] = useState(colorSwatches[0].hex); // <-- NEW: State for selected color
 
   // Fetch all necessary data
   const { data: categories = [], isLoading: isLoadingCategories } = useGetCategoriesQuery();
   const [createCategory, { isLoading: isCreatingCategory }] = useCreateCategoryMutation();
   const [deleteCategory] = useDeleteCategoryMutation();
-  const { data: expenses = [], isLoading: isLoadingExpenses } = useGetExpensesQuery(); 
+  const { data: expenses, isLoading: isLoadingExpenses } = useGetExpensesQuery(); 
 
   const handleLogout = () => {
     dispatch(logOut());
   };
 
-  // --- FINALIZED CATEGORY SUBMISSION LOGIC (Reliably reads form data) ---
+  // --- CATEGORY SUBMISSION LOGIC ---
   const handleAddCategory = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) return; 
 
     const form = e.currentTarget;
-    // Fix: Read selected value reliably from the form elements
     const nameInput = form.elements.namedItem('categoryName') as HTMLInputElement;
     const typeSelect = form.elements.namedItem('categoryType') as HTMLSelectElement; 
     
@@ -46,10 +54,11 @@ const DashboardPage = () => {
           name: name,
           userId: user.id,
           type: type, 
-          color: type === 'Income' ? '#22c55e' : '#dc2626',
-        } as any).unwrap(); 
+          color: selectedColor, // <-- NEW: Use the selected color from state
+        }).unwrap(); 
         
         form.reset(); 
+        setSelectedColor(colorSwatches[0].hex); // <-- NEW: Reset color on success
       } catch (err: any) {
         console.error('Failed to create category:', err.data?.error || err.message);
       }
@@ -65,18 +74,18 @@ const DashboardPage = () => {
 
   // --- DASHBOARD CALCULATION LOGIC ---
   const totalIncome = expenses
-    .filter(exp => {
+    ?.filter(exp => {
       const category = categories.find(cat => cat.id === exp.category_id);
       return category && category.type === 'Income'; 
     })
-    .reduce((sum, exp) => sum + exp.amount, 0);
+    .reduce((sum, exp) => sum + exp.amount, 0) || 0;
 
   const totalExpenses = expenses
-    .filter(exp => {
+    ?.filter(exp => {
       const category = categories.find(cat => cat.id === exp.category_id);
       return category && category.type === 'Expense'; 
     })
-    .reduce((sum, exp) => sum + exp.amount, 0);
+    .reduce((sum, exp) => sum + exp.amount, 0) || 0;
 
   const totalBalance = totalIncome - totalExpenses;
   const isLoadingData = isLoadingExpenses || isLoadingCategories;
@@ -158,7 +167,7 @@ const DashboardPage = () => {
                 Categories
               </button>
             </nav>
-            {/* 'Add Transaction' Button (Only shown on Transaction tab) */}
+            {/* 'Add Transaction' Button */}
             {activeTab === 'transactions' && (
                 <button
                     onClick={() => setIsModalOpen(true)}
@@ -167,7 +176,7 @@ const DashboardPage = () => {
                     + Add Transaction
                 </button>
             )}
-            {/* Categories Summary (Only shown on Category tab) */}
+            {/* Categories Summary */}
              {activeTab === 'categories' && (
                 <p className="text-sm text-gray-500">Managing {categories.length} categories.</p>
             )}
@@ -179,7 +188,7 @@ const DashboardPage = () => {
             {/* Transactions Tab Content */}
             {activeTab === 'transactions' && (
               <div className="mt-4">
-                <h2 className="text-xl font-semibold mb-4">Recent Transactions ({expenses.length})</h2>
+                <h2 className="text-xl font-semibold mb-4">Recent Transactions ({expenses?.length || 0})</h2>
                 <ExpenseList categories={categories} /> 
               </div>
             )}
@@ -187,7 +196,7 @@ const DashboardPage = () => {
             {/* Categories Tab Content */}
             {activeTab === 'categories' && (
               <div className="mt-4">
-                {/* Add New Category Form (Inline) */}
+                {/* Add New Category Form */}
                 <form onSubmit={handleAddCategory} className="rounded-lg bg-white p-6 shadow">
                   <h2 className="text-xl font-semibold">Add New Category</h2>
                   
@@ -208,7 +217,7 @@ const DashboardPage = () => {
                       />
                     </div>
 
-                    {/* Category Type Dropdown (NEW) */}
+                    {/* Category Type Dropdown */}
                     <div>
                       <label htmlFor="categoryType" className="block text-sm font-medium text-gray-700">
                         Type
@@ -224,14 +233,26 @@ const DashboardPage = () => {
                       </select>
                     </div>
                   </div>
-                  {/* Color Picker Placeholder (from screenshot) */}
+                  
+                  {/* --- NEW: Clickable Color Picker --- */}
                   <div className="mt-4">
                       <label className="block text-sm font-medium text-gray-700">Color</label>
                       <div className="flex space-x-2 mt-1">
-                          <div className="h-6 w-6 rounded-full bg-blue-500"></div>
-                          <div className="h-6 w-6 rounded-full bg-red-500"></div>
-                          <div className="h-6 w-6 rounded-full bg-orange-500"></div>
-                          <div className="h-6 w-6 rounded-full bg-green-500"></div>
+                        {colorSwatches.map((color) => (
+                          <button
+                            type="button"
+                            key={color.hex}
+                            onClick={() => setSelectedColor(color.hex)}
+                            className={`h-8 w-8 rounded-full border-2 transition-all ${
+                              selectedColor === color.hex
+                                ? 'border-blue-600 ring-2 ring-blue-300' // Highlight selected
+                                : 'border-transparent'
+                            }`}
+                            style={{ backgroundColor: color.hex }}
+                          >
+                            &nbsp; {/* Screen reader/empty content fix */}
+                          </button>
+                        ))}
                       </div>
                   </div>
 
@@ -265,16 +286,16 @@ const DashboardPage = () => {
                                 onClick={() => handleDeleteCategory(category.id)}
                                 className="text-gray-400 hover:text-red-500 transition-colors"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0-.97-6.045m6.496-4.254a4.125 4.125 0 0 0-4.123 4.123h-2.123a4.125 4.125 0 0 0 4.123 4.123m0 0h2.25m-2.25 0V15.75m0 0a.75.75 0 0 1-.75-.75V12m0 0a.75.75 0 0 1-.75-.75V9m0 0a.75.75 0 0 1 .75-.75h1.5" />
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-5 h-5">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.576 0c-.342.052-.682.107-1.022.166m11.554 0a48.251 48.251 0 0 1-3.478-.397m1.523 0V3.116A1.125 1.125 0 0 0 12.31 2H11.69a1.125 1.125 0 0 0-1.12 1.116v.678m1.523 0a48.251 48.251 0 0 0-3.478-.397m0 0a48.11 48.11 0 0 0-3.478.397m12.576 0c.342.052.682.107 1.022.166" />
                                 </svg>
                             </button>
                           </div>
-                          {/* Displaying Type and Color */}
+                          {/* --- NEW: Use category.color from database --- */}
                           <div className="flex items-center text-xs mt-1 space-x-2">
                             <div 
                               className={`h-2 w-2 rounded-full`} 
-                              style={{ backgroundColor: category.type === 'Income' ? '#22c55e' : '#dc2626' }} // Color indicator
+                              style={{ backgroundColor: category.color || '#dc2626' }} // Use saved color
                             ></div>
                             <span 
                               className={`font-semibold ${category.type === 'Income' ? 'text-green-600' : 'text-red-600'}`}

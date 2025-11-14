@@ -4,28 +4,27 @@ import { useForm } from 'react-hook-form';
 import type { SubmitHandler } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { useNavigate } from 'react-router-dom';
-// --- 1. IMPORT OUR AUTH HOOKS ---
+import { useNavigate } from 'react-router-dom'; // <-- FIX: Import useNavigate
 import {
   useLoginMutation,
   useRegisterMutation,
 } from '../features/auth/authApiSlice';
 
-// --- TYPE DEFINITION ---
+// FIX: Manually define FormInputs to solve type errors
 type FormInputs = {
   email: string;
   password: string;
-  username?: string; 
+  username?: string; // Make username optional
 };
 
-// 1. Define the validation schema for Registration
+// Define the validation schema for Registration
 const registerSchema = yup.object().shape({
   username: yup.string().required('Full Name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
   password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
 });
 
-// 2. Define the validation schema for Login
+// Define the validation schema for Login
 const loginSchema = yup.object().shape({
   email: yup.string().email('Invalid email').required('Email is required'),
   password: yup.string().required('Password is required'),
@@ -33,11 +32,12 @@ const loginSchema = yup.object().shape({
 
 const AuthPage = () => {
   const [isLoginView, setIsLoginView] = useState(true);
-  const navigate = useNavigate(); // <-- ADD THIS LINE
-
-  // --- 2. SET UP THE MUTATIONS ---
+  
+  // --- FIX: Call the hooks to define navigate, login, and registerUser ---
+  const navigate = useNavigate(); 
   const [login, { isLoading: isLoggingIn, error: loginError }] = useLoginMutation();
   const [registerUser, { isLoading: isRegistering, error: registerError }] = useRegisterMutation();
+  // -------------------------------------------------------------------
 
   // Get the actual error message
   const apiError = (isLoginView ? loginError : registerError) as any;
@@ -63,30 +63,28 @@ const AuthPage = () => {
     });
   }, [isLoginView, reset]);
 
-  // --- 3. THIS IS THE UPDATED SUBMIT FUNCTION ---
+  // This function will now work because 'login', 'registerUser', and 'navigate' are defined
   const onSubmit: SubmitHandler<FormInputs> = async (data) => {
-    if (isLoading) return; // Don't submit if already loading
+    if (isLoading) return; 
 
     try {
       if (isLoginView) {
-        // Prepare login data (email, password)
         const { email, password } = data;
         console.log('Logging in...');
         await login({ email, password }).unwrap();
-        navigate('/'); // <-- ADD THIS LINE
+        navigate('/dashboard'); // Redirect to dashboard
       } else {
-        // Prepare register data (username, email, password_hash)
-        // Your backend expects 'password_hash', so we'll send 'password' as that field
         const { username, email, password } = data;
         console.log('Registering...');
-        await registerUser({ username, email, password_hash: password }).unwrap();
+        // We use 'username' here from the form data
+        await registerUser({ username, email, password_hash: password }).unwrap(); 
 
         console.log('Register successful, logging in...');
         await login({ email, password }).unwrap();
-        navigate('/'); // <-- ADD THIS LINE
+        navigate('/dashboard'); // Redirect to dashboard
       }
     } catch (err) {
-      console.error('Failed:', err);
+      console.error('Failed:', err); 
     }
   };
 
@@ -96,7 +94,7 @@ const AuthPage = () => {
 
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-2 inline-block rounded-full bg-blue-600 p-3 text-white">
+          <div className="mx-auto mb-2 inline-block rounded-full bg-green-600 p-3 text-white"> {/* Green Icon */}
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 0 1-2.25 2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 1 3 12m18 0v-1.5a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 10.5v1.5m18 0m-18 0h18" />
             </svg>
@@ -110,15 +108,15 @@ const AuthPage = () => {
           <h2 className="text-2xl font-semibold">Welcome</h2>
           <p className="text-sm text-gray-500">Sign in to your account or create a new one</p>
         </div>
-
+        
         {/* Tab Toggles */}
         <div className="mb-6 grid grid-cols-2 gap-2 rounded-lg bg-gray-200 p-1">
           <button
             onClick={() => setIsLoginView(true)} 
             type="button" 
-            disabled={isLoading} // Disable button when loading
+            disabled={isLoading}
             className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-              isLoginView ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
+              isLoginView ? 'bg-white text-green-600 shadow' : 'text-gray-600' // Green highlight
             } transition-all duration-200 disabled:opacity-50`}
           >
             Login
@@ -126,9 +124,9 @@ const AuthPage = () => {
           <button
             onClick={() => setIsLoginView(false)}
             type="button"
-            disabled={isLoading} // Disable button when loading
+            disabled={isLoading}
             className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-              !isLoginView ? 'bg-white text-blue-600 shadow' : 'text-gray-600'
+              !isLoginView ? 'bg-white text-green-600 shadow' : 'text-gray-600' // Green highlight
             } transition-all duration-200 disabled:opacity-50`}
           >
             Sign Up
@@ -136,10 +134,9 @@ const AuthPage = () => {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          {/* --- 4. SHOW API ERROR MESSAGE --- */}
+          {/* API Error Message */}
           {apiError && (
             <div className="mb-4 rounded-lg bg-red-100 p-3 text-center text-sm text-red-700">
-              {/* This will show backend errors like "Invalid credentials" */}
               {apiError.data?.error || 'An unknown error occurred'}
             </div>
           )}
@@ -152,11 +149,11 @@ const AuthPage = () => {
                 type="text"
                 placeholder="John Doe"
                 {...register('username')}
-                disabled={isLoading} // Disable input when loading
+                disabled={isLoading}
                 className={`w-full rounded-lg border ${
                   errors.username ? 'border-red-500' : 'border-gray-300'
-                } p-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 ${
-                  errors.username ? 'focus:ring-red-500' : 'focus:ring-blue-500'
+                } p-3 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 ${
+                  errors.username ? 'focus:ring-red-500' : 'focus:ring-green-500' // Green focus
                 } disabled:bg-gray-100`}
               />
               {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username.message}</p>}
@@ -173,8 +170,8 @@ const AuthPage = () => {
               disabled={isLoading}
               className={`w-full rounded-lg border ${
                 errors.email ? 'border-red-500' : 'border-gray-300'
-              } p-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 ${
-                errors.email ? 'focus:ring-red-500' : 'focus:ring-blue-500'
+              } p-3 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 ${
+                errors.email ? 'focus:ring-red-500' : 'focus:ring-green-500' // Green focus
               } disabled:bg-gray-100`}
             />
             {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
@@ -190,8 +187,8 @@ const AuthPage = () => {
               disabled={isLoading}
               className={`w-full rounded-lg border ${
                 errors.password ? 'border-red-500' : 'border-gray-300'
-              } p-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 ${
-                errors.password ? 'focus:ring-red-500' : 'focus:ring-blue-500'
+              } p-3 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 ${
+                errors.password ? 'focus:ring-red-500' : 'focus:ring-green-500' // Green focus
               } disabled:bg-gray-100`}
             />
             {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
@@ -200,10 +197,9 @@ const AuthPage = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading} // Disable button when loading
-            className="w-full rounded-lg bg-blue-600 p-3 text-white transition-colors duration-200 hover:bg-blue-700 disabled:bg-blue-400"
+            disabled={isLoading}
+            className="w-full rounded-lg bg-green-600 p-3 text-white transition-colors duration-200 hover:bg-green-700 disabled:bg-green-400" // Green button
           >
-            {/* Show a loading message */}
             {isLoading
               ? 'Loading...'
               : isLoginView

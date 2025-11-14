@@ -1,17 +1,18 @@
 // src/features/expenses/components/ExpenseList.tsx
 import React from 'react';
+// Import the delete mutation hook
 import { useGetExpensesQuery, useDeleteExpenseMutation } from '../expenseApiSlice'; 
 import type { ExpenseResponse } from '../expenseApiSlice'; 
-import type { Category } from '../../categories/categoryApiSlice'; 
+import type { Category } from '../../categories/categoryApiSlice'; // Import Category type
 
 // Define Props for the ExpenseList component
 interface ExpenseListProps {
     categories: Category[]; // Receive the categories array
 }
 
-const ExpenseList = ({ categories }: ExpenseListProps) => { // Receive the prop
+const ExpenseList = ({ categories }: ExpenseListProps) => { 
   const { data: expenses, isLoading, isSuccess, isError, error } = useGetExpensesQuery();
-  const [deleteExpense] = useDeleteExpenseMutation(); // <-- DELETE MUTATION HOOK
+  const [deleteExpense] = useDeleteExpenseMutation(); // <-- NEW MUTATION HOOK
 
   if (isLoading) {
     return (
@@ -50,22 +51,24 @@ const ExpenseList = ({ categories }: ExpenseListProps) => { // Receive the prop
   // Display the List
   return (
     <div className="space-y-4">
-      {expenses.map((expense: ExpenseResponse) => {
-          // --- LOGIC FIX: Determine type, color, and sign ---
+      {expenses?.map((expense: ExpenseResponse) => {
+          // --- FIX: Logic to check category and determine type ---
           const category = categories.find(cat => cat.id === expense.category_id);
           const isIncome = category?.type === 'Income';
           const amountColor = isIncome ? 'text-green-600' : 'text-red-600';
           const amountSign = isIncome ? '+' : '-';
+          const categoryName = category?.name || `Category ID: ${expense.category_id}`;
 
           return (
             <div key={expense.id} className="flex items-center justify-between rounded-lg bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
               
               {/* Left Side: Category and Note */}
               <div className="flex items-center space-x-4">
+                {/* FIX: Use correct color based on type */}
                 <div className={`h-3 w-3 rounded-full ${isIncome ? 'bg-green-500' : 'bg-red-500'}`}></div> 
                 
                 <div>
-                  <p className="font-medium text-gray-800">{category?.name || `ID: ${expense.category_id}`}</p> 
+                  <p className="font-medium text-gray-800">{categoryName}</p> 
                   <p className="text-sm text-gray-500 truncate max-w-xs">{expense.note || 'No description'}</p>
                 </div>
               </div>
@@ -73,20 +76,21 @@ const ExpenseList = ({ categories }: ExpenseListProps) => { // Receive the prop
               {/* Right Side: Amount, Date, and Delete Button */}
               <div className="flex items-center space-x-3">
                   <div className="text-right">
+                      {/* FIX: Use correct color and sign */}
                       <p className={`text-lg font-semibold ${amountColor}`}>
-                          {amountSign}{expense.amount.toFixed(2)}
+                          {amountSign}${expense.amount.toFixed(2)}
                       </p>
                       <p className="text-xs text-gray-500">
                           {new Date(expense.expense_date).toLocaleDateString()}
                       </p>
                   </div>
-                  {/* DELETE BUTTON */}
+                  {/* --- FIX: UPDATED DELETE ICON --- */}
                   <button 
                       onClick={() => handleDelete(expense.id)}
                       className="text-gray-400 hover:text-red-500 transition-colors"
                   >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0-.97-6.045m6.496-4.254a4.125 4.125 0 0 0-4.123 4.123h-2.123a4.125 4.125 0 0 0 4.123 4.123m0 0h2.25m-2.25 0V15.75m0 0a.75.75 0 0 1-.75-.75V12m0 0a.75.75 0 0 1-.75-.75V9m0 0a.75.75 0 0 1 .75-.75h1.5" />
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.576 0c-.342.052-.682.107-1.022.166m11.554 0a48.251 48.251 0 0 1-3.478-.397m1.523 0V3.116A1.125 1.125 0 0 0 12.31 2H11.69a1.125 1.125 0 0 0-1.12 1.116v.678m1.523 0a48.251 48.251 0 0 0-3.478-.397m0 0a48.11 48.11 0 0 0-3.478.397m12.576 0c.342.052.682.107 1.022.166" />
                       </svg>
                   </button>
               </div>
