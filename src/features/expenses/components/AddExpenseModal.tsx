@@ -27,10 +27,12 @@ const expenseSchema = yup.object({ // <-- Use yup.object()
     .typeError('Please select a category')
     .required('Category is required'),
   expense_date: yup.string().required('Date is required'), 
-  note: yup.string(), // <-- FIX 1: Change from .optional() to .string()
+  // FIX 1: Make 'note' a required string, but give it a default empty value
+  note: yup.string().default(''), 
 });
 
-// FIX 2: Infer the type directly from the schema
+// FIX 2: Infer the type directly from the schema. 
+// 'note' will now be 'string' (not optional), which fixes the error.
 type FormInputs = yup.InferType<typeof expenseSchema>;
 
 const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
@@ -49,7 +51,7 @@ const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
     
     defaultValues: {
       expense_date: new Date().toISOString().split('T')[0],
-      note: undefined, // Default 'note' to undefined
+      // 'note' default is now handled by yup
     },
   });
 
@@ -58,13 +60,13 @@ const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
     if (!user || isCreatingExpense) return;
 
     try {
-      // Send the data, it now matches the types perfectly
+      // Send the data, 'note' is now guaranteed to be a string
       await createExpense({
         ...data,
-        user_id: user.id, // Add the user_id
-        category_id: Number(data.category_id), // Ensure it's a number
-        expense_date: data.expense_date, // Send the date string
-        note: data.note || '', // Send empty string if note is undefined
+        user_id: user.id, 
+        category_id: Number(data.category_id), 
+        expense_date: data.expense_date, 
+        note: data.note, // 'note' is now a string (even if empty)
       }).unwrap();
       
       onClose(); // Close the modal on success
@@ -156,6 +158,7 @@ const AddExpenseModal = ({ onClose }: AddExpenseModalProps) => {
               placeholder="e.g., Lunch with client"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
+            {/* We don't need to show an error for 'note' since it's optional */}
           </div>
 
           {/* Buttons */}
