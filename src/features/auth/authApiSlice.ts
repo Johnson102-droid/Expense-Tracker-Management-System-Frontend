@@ -22,7 +22,6 @@ export const authApiSlice = apiSlice.injectEndpoints({
         method: 'POST',
         body: credentials,
       }),
-      // FIX: Add underscore to 'arg' to mark it as intentionally unused
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
@@ -42,10 +41,21 @@ export const authApiSlice = apiSlice.injectEndpoints({
       }),
     }),
 
+    // 👇 ADD THIS NEW VERIFY ENDPOINT 👇
+    verify: builder.mutation<any, any>({
+      query: (data) => ({
+        url: '/auth/verify', 
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    // 👆 END ADDITION 👆
+
   }),
 });
 
 export const {
   useLoginMutation,
   useRegisterMutation,
+  useVerifyMutation, // <--- EXPORT THIS HOOK
 } = authApiSlice;

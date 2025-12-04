@@ -4,27 +4,28 @@ import { useForm } from 'react-hook-form';
 import type { SubmitHandler } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { useNavigate } from 'react-router-dom'; // <-- FIX: Import useNavigate
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast'; // <--- NEW: Import toast for popups
 import {
   useLoginMutation,
   useRegisterMutation,
 } from '../features/auth/authApiSlice';
 
-// FIX: Manually define FormInputs to solve type errors
+// Manually define FormInputs
 type FormInputs = {
   email: string;
   password: string;
-  username?: string; // Make username optional
+  username?: string;
 };
 
-// Define the validation schema for Registration
+// Validation schema for Registration
 const registerSchema = yup.object().shape({
   username: yup.string().required('Full Name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
   password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
 });
 
-// Define the validation schema for Login
+// Validation schema for Login
 const loginSchema = yup.object().shape({
   email: yup.string().email('Invalid email').required('Email is required'),
   password: yup.string().required('Password is required'),
@@ -33,13 +34,10 @@ const loginSchema = yup.object().shape({
 const AuthPage = () => {
   const [isLoginView, setIsLoginView] = useState(true);
   
-  // --- FIX: Call the hooks to define navigate, login, and registerUser ---
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const [login, { isLoading: isLoggingIn, error: loginError }] = useLoginMutation();
   const [registerUser, { isLoading: isRegistering, error: registerError }] = useRegisterMutation();
-  // -------------------------------------------------------------------
 
-  // Get the actual error message
   const apiError = (isLoginView ? loginError : registerError) as any;
   const isLoading = isLoggingIn || isRegistering;
 
@@ -63,28 +61,35 @@ const AuthPage = () => {
     });
   }, [isLoginView, reset]);
 
-  // This function will now work because 'login', 'registerUser', and 'navigate' are defined
+  // --- UPDATED SUBMIT LOGIC ---
   const onSubmit: SubmitHandler<FormInputs> = async (data) => {
-    if (isLoading) return; 
+    if (isLoading) return;
 
     try {
       if (isLoginView) {
+        // --- LOGIN FLOW ---
         const { email, password } = data;
         console.log('Logging in...');
         await login({ email, password }).unwrap();
-        navigate('/dashboard'); // Redirect to dashboard
+        navigate('/dashboard'); 
       } else {
+        // --- REGISTER FLOW (Updated) ---
         const { username, email, password } = data;
         console.log('Registering...');
-        // We use 'username' here from the form data
-        await registerUser({ username, email, password_hash: password }).unwrap(); 
+        
+        // 1. Call Register
+        await registerUser({ username, email, password_hash: password }).unwrap();
 
-        console.log('Register successful, logging in...');
-        await login({ email, password }).unwrap();
-        navigate('/dashboard'); // Redirect to dashboard
+        // 2. Show Success Popup
+        toast.success('Registration successful! Please verify your email.');
+
+        // 3. Redirect to Verify Page (passing email in state so user doesn't have to type it)
+        navigate('/verify', { state: { email } });
       }
-    } catch (err) {
-      console.error('Failed:', err); 
+    } catch (err: any) {
+      console.error('Failed:', err);
+      // Optional: Show error toast if you want
+      // toast.error(err.data?.error || 'Operation failed');
     }
   };
 
@@ -94,7 +99,7 @@ const AuthPage = () => {
 
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-2 inline-block rounded-full bg-green-600 p-3 text-white"> {/* Green Icon */}
+          <div className="mx-auto mb-2 inline-block rounded-full bg-green-600 p-3 text-white">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 0 1-2.25 2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 1 3 12m18 0v-1.5a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 10.5v1.5m18 0m-18 0h18" />
             </svg>
@@ -116,7 +121,7 @@ const AuthPage = () => {
             type="button" 
             disabled={isLoading}
             className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-              isLoginView ? 'bg-white text-green-600 shadow' : 'text-gray-600' // Green highlight
+              isLoginView ? 'bg-white text-green-600 shadow' : 'text-gray-600'
             } transition-all duration-200 disabled:opacity-50`}
           >
             Login
@@ -126,7 +131,7 @@ const AuthPage = () => {
             type="button"
             disabled={isLoading}
             className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-              !isLoginView ? 'bg-white text-green-600 shadow' : 'text-gray-600' // Green highlight
+              !isLoginView ? 'bg-white text-green-600 shadow' : 'text-gray-600'
             } transition-all duration-200 disabled:opacity-50`}
           >
             Sign Up
@@ -153,7 +158,7 @@ const AuthPage = () => {
                 className={`w-full rounded-lg border ${
                   errors.username ? 'border-red-500' : 'border-gray-300'
                 } p-3 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 ${
-                  errors.username ? 'focus:ring-red-500' : 'focus:ring-green-500' // Green focus
+                  errors.username ? 'focus:ring-red-500' : 'focus:ring-green-500'
                 } disabled:bg-gray-100`}
               />
               {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username.message}</p>}
@@ -171,7 +176,7 @@ const AuthPage = () => {
               className={`w-full rounded-lg border ${
                 errors.email ? 'border-red-500' : 'border-gray-300'
               } p-3 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 ${
-                errors.email ? 'focus:ring-red-500' : 'focus:ring-green-500' // Green focus
+                errors.email ? 'focus:ring-red-500' : 'focus:ring-green-500'
               } disabled:bg-gray-100`}
             />
             {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
@@ -188,7 +193,7 @@ const AuthPage = () => {
               className={`w-full rounded-lg border ${
                 errors.password ? 'border-red-500' : 'border-gray-300'
               } p-3 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 ${
-                errors.password ? 'focus:ring-red-500' : 'focus:ring-green-500' // Green focus
+                errors.password ? 'focus:ring-red-500' : 'focus:ring-green-500'
               } disabled:bg-gray-100`}
             />
             {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
@@ -198,7 +203,7 @@ const AuthPage = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-lg bg-green-600 p-3 text-white transition-colors duration-200 hover:bg-green-700 disabled:bg-green-400" // Green button
+            className="w-full rounded-lg bg-green-600 p-3 text-white transition-colors duration-200 hover:bg-green-700 disabled:bg-green-400"
           >
             {isLoading
               ? 'Loading...'
